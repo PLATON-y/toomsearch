@@ -3,7 +3,7 @@
 
 """
 Script de Recherche Avancée et Détection de Répertoires
-Version : 1.3.0
+Version : 2.3.0
 Auteur  : Platon-Y pour pctamalou.fr
 Date    : 27 octobre 2024
 Mise à jour de la version initiale du 15 août 2017
