@@ -81,6 +81,6 @@ Les contributions sont les bienvenues ! Si vous souhaitez ajouter des fonctionna
 
 ## Licence
 
-Ce projet est sous licence EOS. Voir le fichier [LICENSE](LICENSE.md) pour plus de détails.
+Ce projet est sous licence EOS. Voir le fichier [LICENSE](./LICENSE.md) pour plus de détails.
 
 ---
