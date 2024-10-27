@@ -3,7 +3,7 @@
 
 """
 Script de Recherche Avancée et Détection de Répertoires
-Version : 1.2.0
+Version : 1.3.0
 Auteur  : Platon-Y pour pctamalou.fr
 Date    : 27 octobre 2024
 Mise à jour de la version initiale du 15 août 2017
@@ -15,7 +15,8 @@ Fonctionnalités principales :
 - Recherche de liens "index of" et "parent directory"
 - Gestion avancée de l'interface utilisateur en couleur
 - Détection automatique et résolution des CAPTCHA via le navigateur
-- Sauvegarde et suppression des doublons dans les résultats
+- Sauvegarde des résultats avec suppression des doublons
+- Export des résultats en format JSON et texte
 - Compatibilité multi-moteur (Google, Bing, DuckDuckGo, etc.)
 
 Usage :
@@ -24,9 +25,6 @@ Usage :
 2. Pour une recherche personnalisée :
    - Spécifier un moteur de recherche, des mots-clés, et des types de fichiers spécifiques.
    - L'utilisateur peut choisir de rechercher dans des répertoires "index of" ou "parent directory".
-
-Ce script est conçu pour être utilisé sous Linux, particulièrement sur Kali Linux, et se destine aux professionnels en sécurité.
-
 """
 
 import requests
@@ -38,6 +36,7 @@ import json
 from colorama import init, Fore, Style
 from tqdm import tqdm
 import logging
+from urllib.parse import quote
 
 # Initialisation de colorama pour la couleur en terminal
 init(autoreset=True)
@@ -84,7 +83,7 @@ def build_search_url(query, engine, filetype=None, advanced=False):
     file_filter = f" filetype:{filetype}" if filetype else ""
     advanced_filter = " intitle:'index of' OR 'parent directory'" if advanced else ""
     full_query = f"{query}{file_filter} {advanced_filter}"
-    return engines[engine].format(full_query)
+    return engines[engine].format(quote(full_query))
 
 # Vérifie si une réponse contient un CAPTCHA
 def detect_captcha(response_text):
@@ -97,18 +96,19 @@ def open_browser_for_captcha(url):
     webbrowser.open(url)
     input(Fore.LIGHTGREEN_EX + "Appuyez sur Entrée une fois que vous avez résolu le CAPTCHA dans le navigateur...")
 
-# Récupération des résultats de recherche avec gestion des CAPTCHA
+# Récupération des résultats de recherche avec gestion des CAPTCHA et des proxies
 def fetch_search_results(query, engine, filetype=None, advanced=False):
     url = build_search_url(query, engine, filetype, advanced)
     headers = {"User-Agent": random.choice(user_agents)}
+    proxy = random.choice(proxies)
     try:
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers, proxies=proxy, timeout=10)
         response.raise_for_status()
         
         # Détecte si un CAPTCHA est présent
         if detect_captcha(response.text):
             open_browser_for_captcha(url)
-            response = requests.get(url, headers=headers, timeout=10)  # Relance la requête après résolution
+            response = requests.get(url, headers=headers, proxies=proxy, timeout=10)  # Relance la requête après résolution
         
         # Analyse du contenu de la réponse
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -119,7 +119,8 @@ def fetch_search_results(query, engine, filetype=None, advanced=False):
                 results.append((item.text, link_tag['href']))
         return results
     except requests.exceptions.RequestException as e:
-        print(Fore.RED + f"Erreur lors de la connexion à {engine} : {e}")
+        print(Fore.RED + f"Erreur lors de la connexion à {engine} avec le proxy {proxy}: {e}")
+        logging.error(f"Erreur lors de la connexion à {engine} avec le proxy {proxy}: {e}")
         return []
 
 # Génération de variantes de requêtes
@@ -138,16 +139,25 @@ def search_with_variations(base_query, engine, filetype=None):
         time.sleep(1)  # Pause pour éviter le blocage
     if all_results:
         save_results(all_results, "resultats_repertoires.txt")
+        save_results_json(all_results, "resultats_repertoires.json")
     else:
         print(Fore.YELLOW + "⚠️ Aucun lien trouvé.")
 
-# Sauvegarde des résultats dans un fichier
+# Sauvegarde des résultats dans un fichier texte
 def save_results(results, filename):
     unique_results = list(set(results))  # Suppression des doublons
     with open(filename, "w", encoding="utf-8") as file:
         for title, link in unique_results:
             file.write(f"{title}\n{link}\n\n")
     print(Fore.GREEN + f"📁 Résultats sauvegardés dans {filename}")
+
+# Sauvegarde des résultats en JSON
+def save_results_json(results, filename):
+    unique_results = list(set(results))
+    results_dict = [{"title": title, "link": link} for title, link in unique_results]
+    with open(filename, "w", encoding="utf-8") as file:
+        json.dump(results_dict, file, indent=4, ensure_ascii=False)
+    print(Fore.GREEN + f"📁 Résultats sauvegardés en JSON dans {filename}")
 
 # Recherche avancée multi-moteur avec support des CAPTCHA
 def perform_deep_search(query, engines=None):
@@ -161,6 +171,7 @@ def perform_deep_search(query, engines=None):
         time.sleep(1)  # Pause entre chaque moteur
     if all_results:
         save_results(all_results, "resultats_avances.txt")
+        save_results_json(all_results, "resultats_avances.json")
     else:
         print(Fore.YELLOW + "⚠️ Aucun résultat trouvé.")
 
@@ -187,6 +198,7 @@ def user_interaction():
                 results = fetch_search_results(query, engine, filetype, advanced=False)
                 if results:
                     save_results(results, "resultats_simple.txt")
+                    save_results_json(results, "resultats_simple.json")
                 else:
                     print(Fore.YELLOW + "⚠️ Aucun résultat trouvé.")
 
@@ -195,11 +207,3 @@ def user_interaction():
 
 if __name__ == "__main__":
     user_interaction()
-
-
-
-
-
-    "yahoo": "https://search.yahoo.com/search?p={}",
-    "ask": "https://www.ask.com/web?q={}",
-    "baidu": "https://www.baidu.com/s?wd={}"
