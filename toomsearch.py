@@ -34,10 +34,26 @@ from bs4 import BeautifulSoup
 import random
 import time
 import webbrowser
+import json
 from colorama import init, Fore, Style
+from tqdm import tqdm
+import logging
 
 # Initialisation de colorama pour la couleur en terminal
 init(autoreset=True)
+
+# Configuration du logging pour les erreurs
+logging.basicConfig(filename='search_errors.log', level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Rotation de proxies publics
+proxies = [
+   {"http": "http://165.225.76.206:10605", "https": "https://165.225.76.206:10605"},
+    {"http": "http://45.77.199.251:8080", "https": "https://45.77.199.251:8080"},
+    {"http": "http://144.217.7.157:9300", "https": "https://144.217.7.157:9300"},
+    {"http": "http://103.216.82.18:6666", "https": "https://103.216.82.18:6666"},
+    {"http": "http://51.158.68.26:8811", "https": "https://51.158.68.26:8811"},
+    # Ajouter davantage de proxies ici
+]
 
 # Rotation de User-Agents pour éviter le blocage
 user_agents = [
@@ -179,3 +195,11 @@ def user_interaction():
 
 if __name__ == "__main__":
     user_interaction()
+
+
+
+
+
+    "yahoo": "https://search.yahoo.com/search?p={}",
+    "ask": "https://www.ask.com/web?q={}",
+    "baidu": "https://www.baidu.com/s?wd={}"
